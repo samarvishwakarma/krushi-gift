@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 13, "column": 0}, "map": {"version":3,"sources":["file:///Users/samarvishwakarma/Downloads/Krushi/krushi-gift/src/app/favicon.ico.mjs%20%28structured%20image%20object%29"],"sourcesContent":["import src from \"IMAGE\";\nexport default { src, width: 256, height: 256 }\n"],"names":["src","width","height"],"mappings":";;;;AAAA;;uCACe;IAAEA,KAAAA,mLAAG;IAAEC,OAAO;IAAKC,QAAQ;AAAI"}},
+    {"offset": {"line": 28, "column": 0}, "map": {"version":3,"sources":["file:///Users/samarvishwakarma/Downloads/Krushi/krushi-gift/src/app/page.tsx"],"sourcesContent":["export default function HomePage() {\n  return (\n    <main className=\"min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center\">\n      <h1 className=\"text-5xl font-bold mb-4\">\n        Hidden Messages ❤️\n      </h1>\n\n      <p className=\"text-slate-300\">\n        Welcome to our little world.\n      </p>\n    </main>\n  );\n}"],"names":["HomePage","className"],"mappings":";;;;;;AAAe,SAASA;IACtB,qBACE,uRAAC;QAAKC,WAAU;;0BACd,uRAAC;gBAAGA,WAAU;0BAA0B;;;;;;0BAIxC,uRAAC;gBAAEA,WAAU;0BAAiB;;;;;;;;;;;;AAKpC"}}]
+}
