@@ -1,4 +1,4 @@
-export const unlockTreasure = (id: string) => {
+export function unlockTreasure(id: string) {
     if (typeof window === "undefined") return;
 
     const unlocked = JSON.parse(
@@ -13,12 +13,12 @@ export const unlockTreasure = (id: string) => {
             JSON.stringify(unlocked)
         );
     }
-};
+}
 
-export const getUnlockedTreasures = () => {
+export function getUnlockedTreasures(): string[] {
     if (typeof window === "undefined") return [];
 
     return JSON.parse(
         localStorage.getItem("unlocked") || "[]"
     );
-};
+}
