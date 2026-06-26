@@ -1,24 +1,28 @@
-export function unlockTreasure(id: string) {
-    if (typeof window === "undefined") return;
-
-    const unlocked = JSON.parse(
-        localStorage.getItem("unlocked") || "[]"
-    );
-
-    if (!unlocked.includes(id)) {
-        unlocked.push(id);
-
-        localStorage.setItem(
-            "unlocked",
-            JSON.stringify(unlocked)
-        );
-    }
-}
+const STORAGE_KEY = "unlocked";
 
 export function getUnlockedTreasures(): string[] {
     if (typeof window === "undefined") return [];
 
-    return JSON.parse(
-        localStorage.getItem("unlocked") || "[]"
-    );
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+}
+
+export function isTreasureUnlocked(id: string): boolean {
+    return getUnlockedTreasures().includes(id);
+}
+
+export function unlockTreasure(id: string): boolean {
+    const current = getUnlockedTreasures();
+
+    // already unlocked → return false (important!)
+    if (current.includes(id)) {
+        return false;
+    }
+
+    console.log(id)
+
+    const updated = [...current, id];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+
+    return true; // NEW unlock happened
 }

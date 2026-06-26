@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react";
 import { treasures } from "@/data/treasures";
 import { getUnlockedTreasures } from "@/utils/progress";
+import { useRouter } from "next/navigation";
 
 export default function TreasureProgress() {
     const [unlocked, setUnlocked] = useState<string[]>([]);
+    const router = useRouter();
 
     useEffect(() => {
         setUnlocked(getUnlockedTreasures());
@@ -36,9 +38,15 @@ export default function TreasureProgress() {
                     const isUnlocked = unlocked.includes(treasure.id);
 
                     return (
-                        <div
+                        <button
                             key={treasure.id}
-                            className="flex justify-between items-center border border-slate-700 rounded-xl px-4 py-3"
+                            className={`flex justify-between items-center border border-slate-700 rounded-xl px-4 py-3 w-full ${isUnlocked ? "cursor-pointer" : "cursor-not-allowed"}`}
+                            disabled={!isUnlocked}
+                            onClick={() => {
+                                if (isUnlocked) {
+                                    router.push(`/${treasure.url}`);
+                                }
+                            }}
                         >
                             <span className="flex items-center gap-2">
                                 <span>{treasure.emoji}</span>
@@ -57,7 +65,7 @@ export default function TreasureProgress() {
                             <span>
                                 {isUnlocked ? "✅" : "🔒"}
                             </span>
-                        </div>
+                        </button>
                     );
                 })}
             </div>
