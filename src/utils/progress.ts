@@ -19,8 +19,6 @@ export function unlockTreasure(id: string): boolean {
         return false;
     }
 
-    console.log(id)
-
     const updated = [...current, id];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 

@@ -7,14 +7,13 @@ export default function BackHomeButton() {
         <Link
             href="/"
             className="
-                fixed top-6 left-7
-                text-white/50 hover:text-white
-                text-sm transition
-                z-50
-                hover:-translate-x-2
+                fixed left-5 top-5 z-50
+                rounded-full border border-[#d9c19a] bg-[#fffaf0]/80
+                px-4 py-1.5 text-sm text-[#7a5a38] shadow-sm backdrop-blur
+                transition hover:-translate-x-1 hover:text-[#b23b53]
             "
         >
-            ← Our Little World
+            ← our little world
         </Link>
     );
 }
