@@ -6,9 +6,8 @@ import { unlockTreasure } from "@/utils/progress";
 import AnimatedPage from "./AnimatedPage";
 import BackHomeButton from "./BackHomeButton";
 import MemoryUnlockOverlay from "./MemoryUnlockOverlay";
-import VoiceNote from "./scrapbook/VoiceNote";
-import Polaroid from "./scrapbook/Polaroid";
 import Tape from "./scrapbook/Tape";
+import PageMedia from "./edit/PageMedia";
 
 export type SecretPageProps = {
     id: string;
@@ -102,7 +101,7 @@ export default function SecretPage({
                             transition={{ duration: 0.55 }}
                             className="relative mt-9 w-full rotate-[0.4deg] rounded-[16px] border border-[#e3cfa6] bg-[#fffaf0] p-7 shadow-[0_14px_40px_rgba(120,80,40,0.18)]"
                         >
-                            <Tape className="left-1/2 -top-3 -translate-x-1/2 rotate-[3deg]" />
+                            <Tape className="left-1/2 -top-3 -translate-x-1/2 rotate-3" />
                             {letter.map((para, i) => (
                                 <p
                                     key={i}
@@ -120,34 +119,14 @@ export default function SecretPage({
                         </motion.div>
                     )}
 
-                    {/* photos */}
-                    {photos && photos.length > 0 && (
-                        <div className="mt-9 flex flex-wrap items-start justify-center gap-5">
-                            {photos.map((p, i) => (
-                                <motion.div
-                                    key={i}
-                                    initial={{ opacity: 0, y: 24, rotate: 0 }}
-                                    whileInView={{ opacity: 1, y: 0 }}
-                                    viewport={{ once: true, amount: 0.3 }}
-                                    transition={{ duration: 0.5, delay: i * 0.1 }}
-                                    whileHover={{ scale: 1.04, rotate: 0 }}
-                                    className="w-40"
-                                >
-                                    <Polaroid
-                                        src={p.src}
-                                        caption={p.caption}
-                                        emoji={p.emoji ?? sticker}
-                                        rotate={i % 2 === 0 ? -3 : 3}
-                                    />
-                                </motion.div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* voice note */}
-                    <div className="mt-10 w-full">
-                        <VoiceNote src={audio} accent={accent} />
-                    </div>
+                    {/* photos + voice notes (seed fixed; Krushi's additions append) */}
+                    <PageMedia
+                        pageId={id}
+                        seedPhotos={photos}
+                        seedAudio={audio}
+                        accent={accent}
+                        sticker={sticker}
+                    />
                 </main>
             </AnimatedPage>
         </>

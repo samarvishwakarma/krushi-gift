@@ -43,7 +43,7 @@ export default function MemoryUnlockOverlay({ show, onFinish, title }: Props) {
         <AnimatePresence>
             {show && (
                 <motion.div
-                    className="fixed inset-0 z-[120] flex items-center justify-center bg-[#3a2417]/55 backdrop-blur-sm"
+                    className="fixed inset-0 z-120 flex items-center justify-center bg-[#3a2417]/55 backdrop-blur-sm"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

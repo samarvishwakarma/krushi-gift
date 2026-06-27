@@ -10,7 +10,7 @@ export default function Page() {
             accent="#7C8B4A"
             audio="/audio/homesick.mp3"
             letter={[
-                "I know that ache — when home feels like a place you can only visit in your memory. I wish I could carry you there.",
+                "I know that ache, when home feels like a place you can only visit in your memory. I wish I could carry you there.",
                 "Until then, let me be a little piece of home. Wherever I am, there's always a door open for you.",
             ]}
         />

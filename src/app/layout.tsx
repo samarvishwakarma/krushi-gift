@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Caveat, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import PaperBackground from "@/components/scrapbook/PaperBackground";
+import { EditModeProvider } from "@/components/edit/EditModeProvider";
+import EditToggle from "@/components/edit/EditToggle";
 
 const caveat = Caveat({
   subsets: ["latin"],
@@ -33,7 +35,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col text-[#5b4632]">
         <PaperBackground />
-        {children}
+        <EditModeProvider>
+          {children}
+          <EditToggle />
+        </EditModeProvider>
       </body>
     </html>
   );

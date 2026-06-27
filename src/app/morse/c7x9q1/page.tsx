@@ -14,7 +14,7 @@ export default function Page() {
                 "· – – · — it spells more than my name. It spells: I'm yours, quietly, all the time.",
             ]}
             photos={[
-                { src: "/photos/morse-1.jpg", caption: "the pendant", emoji: "📿" },
+                { src: "/photos/memories/morse.jpg", caption: "the pendant", emoji: "📿" },
             ]}
         />
     );

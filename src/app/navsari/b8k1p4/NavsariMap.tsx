@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 export type Kind = "home" | "place" | "food" | "heart";
 
 export type Landmark = {
+    id?: string; // present only for user-added (DB) pins
     name: string;
     lat: number;
     lon: number;
@@ -26,7 +27,8 @@ const PIN_COLOR: Record<Kind, string> = {
 /* ---- Map palette (beige land + red roads, matching the printed poster) ---- */
 const LAND = "#F4E9D2";
 const WATER = "#C7D6DC";
-const ROAD = "#d17e89"; // same red as the page text/headings
+const ROAD = "#BC8B75"; // same red as the page text/headings
+const RAIL = "#7c6b54"; // warm brown dashed rail track
 
 const OPENFREEMAP = "https://tiles.openfreemap.org/planet";
 const SRC = "ofm";
@@ -97,6 +99,21 @@ function buildStyle(): StyleSpecification {
                 paint: { "line-color": ROAD, "line-width": width([[7, 1], [12, 2.4], [16, 4.5], [18, 7]]) },
                 layout: { "line-cap": "round", "line-join": "round" },
             },
+            // Railway — dashed line on top so the track is clearly visible.
+            {
+                id: "rail",
+                source: SRC,
+                "source-layer": "transportation",
+                type: "line",
+                filter: roadFilter(["rail", "transit"]),
+                paint: {
+                    "line-color": RAIL,
+                    "line-opacity": 0.85,
+                    "line-width": width([[8, 0.8], [12, 1.4], [16, 2.4], [18, 3.4]]),
+                    "line-dasharray": [2, 2.2],
+                },
+                layout: { "line-cap": "butt", "line-join": "round" },
+            },
         ],
     } as StyleSpecification;
 }
@@ -107,10 +124,32 @@ function escapeHtml(s: string) {
     );
 }
 
-export default function NavsariMap({ landmarks }: { landmarks: Landmark[] }) {
+type Props = {
+    pins: Landmark[];
+    editing?: boolean;
+    onAddAt?: (lat: number, lon: number) => void;
+    onDelete?: (id: string) => void;
+    onEdit?: (id: string) => void;
+};
+
+export default function NavsariMap({ pins, editing = false, onAddAt, onDelete, onEdit }: Props) {
     const containerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<maplibregl.Map | null>(null);
+    const markersRef = useRef<maplibregl.Marker[]>([]);
 
+    // Latest values in refs so the once-only init effect reads them fresh.
+    const pinsRef = useRef(pins);
+    const editingRef = useRef(editing);
+    const onAddRef = useRef(onAddAt);
+    const onDelRef = useRef(onDelete);
+    const onEditRef = useRef(onEdit);
+    pinsRef.current = pins;
+    editingRef.current = editing;
+    onAddRef.current = onAddAt;
+    onDelRef.current = onDelete;
+    onEditRef.current = onEdit;
+
+    // Init the map once.
     useEffect(() => {
         const container = containerRef.current;
         if (!container || mapRef.current) return;
@@ -129,14 +168,10 @@ export default function NavsariMap({ landmarks }: { landmarks: Landmark[] }) {
         map.touchZoomRotate.disableRotation();
 
         const bounds = new maplibregl.LngLatBounds();
-        landmarks.forEach((l) => bounds.extend([l.lon, l.lat]));
+        pinsRef.current.forEach((l) => bounds.extend([l.lon, l.lat]));
         const recenter = (animate = true) =>
-            map.fitBounds(bounds, {
-                padding: 60,
-                maxZoom: 15,
-                duration: animate ? 700 : 0,
-            });
-        recenter(false);
+            map.fitBounds(bounds, { padding: 60, maxZoom: 15, duration: animate ? 700 : 0 });
+        if (!bounds.isEmpty()) recenter(false);
 
         // Recenter ("back to our world") control.
         const recenterEl = document.createElement("div");
@@ -149,14 +184,50 @@ export default function NavsariMap({ landmarks }: { landmarks: Landmark[] }) {
         recenterBtn.onclick = () => recenter(true);
         recenterEl.appendChild(recenterBtn);
         map.addControl(
-            {
-                onAdd: () => recenterEl,
-                onRemove: () => recenterEl.remove(),
-            } as maplibregl.IControl,
+            { onAdd: () => recenterEl, onRemove: () => recenterEl.remove() } as maplibregl.IControl,
             "top-left",
         );
 
-        for (const l of landmarks) {
+        // Click empty map (in edit mode) → add a pin there.
+        map.on("click", (e) => {
+            if (editingRef.current) onAddRef.current?.(e.lngLat.lat, e.lngLat.lng);
+        });
+
+        // Delegated edit/delete-button clicks inside popups.
+        const onContainerClick = (ev: MouseEvent) => {
+            const target = ev.target as HTMLElement;
+            const delId = target?.closest?.("[data-del]")?.getAttribute("data-del");
+            if (delId) {
+                onDelRef.current?.(delId);
+                return;
+            }
+            const editId = target?.closest?.("[data-edit]")?.getAttribute("data-edit");
+            if (editId) onEditRef.current?.(editId);
+        };
+        container.addEventListener("click", onContainerClick);
+
+        return () => {
+            container.removeEventListener("click", onContainerClick);
+            map.remove();
+            mapRef.current = null;
+        };
+    }, []);
+
+    // Reflect edit mode on the cursor.
+    useEffect(() => {
+        const map = mapRef.current;
+        if (map) map.getCanvas().style.cursor = editing ? "crosshair" : "";
+    }, [editing]);
+
+    // Rebuild markers whenever the pins (or edit mode) change.
+    useEffect(() => {
+        const map = mapRef.current;
+        if (!map) return;
+
+        markersRef.current.forEach((m) => m.remove());
+        markersRef.current = [];
+
+        for (const l of pins) {
             const isHeart = l.kind === "heart";
             const size = isHeart ? 15 : l.kind === "home" ? 42 : 32;
             const fs = isHeart ? 0 : l.kind === "home" ? 22 : 16;
@@ -168,10 +239,18 @@ export default function NavsariMap({ landmarks }: { landmarks: Landmark[] }) {
             const photo = l.photo
                 ? `<img src="${escapeHtml(l.photo)}" alt="" onerror="this.remove()" style="width:100%;height:96px;object-fit:cover;border-radius:5px;border:1px solid #eadcc0;margin-bottom:6px"/>`
                 : "";
+            const editControls =
+                editing && l.id
+                    ? `<div style="display:flex;gap:6px;margin-top:8px">
+                            <button data-edit="${escapeHtml(l.id)}" style="flex:1;border:1px solid #e0cba2;background:#fffaf0;color:#8a6f53;border-radius:8px;padding:4px 0;cursor:pointer;font:inherit">edit ✎</button>
+                            <button data-del="${escapeHtml(l.id)}" style="flex:1;border:1px solid #e7b3bd;background:#fff0f2;color:#b23b53;border-radius:8px;padding:4px 0;cursor:pointer;font:inherit">remove 🗑</button>
+                        </div>`
+                    : "";
             const html = `<div style="width:170px;text-align:center">
                     ${photo}
                     <div style="font-family:var(--font-caveat),cursive;font-size:21px;line-height:1.1;color:#b23b53">${escapeHtml(l.name)}</div>
                     <div style="font-size:14px;color:#7a5a38;margin-top:2px">${escapeHtml(l.note)}</div>
+                    ${editControls}
                 </div>`;
 
             const popup = new maplibregl.Popup({
@@ -180,17 +259,13 @@ export default function NavsariMap({ landmarks }: { landmarks: Landmark[] }) {
                 maxWidth: "200px",
             }).setHTML(html);
 
-            new maplibregl.Marker({ element: el, anchor: "center" })
+            const marker = new maplibregl.Marker({ element: el, anchor: "center" })
                 .setLngLat([l.lon, l.lat])
                 .setPopup(popup)
                 .addTo(map);
+            markersRef.current.push(marker);
         }
-
-        return () => {
-            map.remove();
-            mapRef.current = null;
-        };
-    }, [landmarks]);
+    }, [pins, editing]);
 
     return <div ref={containerRef} className="navsari-map h-full w-full" />;
 }
