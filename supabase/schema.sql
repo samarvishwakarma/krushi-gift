@@ -24,6 +24,19 @@ create table if not exists media (
   created_at timestamptz not null default now()
 );
 
+-- Treasure progress is PER VISITOR, keyed by an anonymous id stored in the
+-- browser (cookie + localStorage). This way your own testing never reveals
+-- memories to Krushi — each device has its own discovery state.
+-- Discovery data is disposable, so this recreates the table cleanly.
+drop table if exists progress;
+create table progress (
+  visitor text not null,
+  page text not null,
+  unlocked_at timestamptz not null default now(),
+  primary key (visitor, page)
+);
+create index if not exists progress_visitor_idx on progress (visitor);
+
 create index if not exists pins_page_idx on pins (page);
 create index if not exists media_page_idx on media (page);
 

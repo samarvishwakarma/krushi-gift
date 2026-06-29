@@ -36,7 +36,9 @@ export default function Polaroid({
                     <img
                         src={src}
                         alt={caption ?? ""}
-                        className="h-full w-full object-cover"
+                        draggable={false}
+                        className="pointer-events-none h-full w-full select-none object-cover"
+                        style={{ WebkitUserDrag: "none" } as React.CSSProperties}
                         onError={() => setFailed(true)}
                     />
                 ) : (

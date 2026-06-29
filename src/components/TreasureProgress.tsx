@@ -11,7 +11,7 @@ export default function TreasureProgress() {
     const router = useRouter();
 
     useEffect(() => {
-        setUnlocked(getUnlockedTreasures());
+        getUnlockedTreasures().then(setUnlocked);
     }, []);
 
     const progress = (unlocked.length / treasures.length) * 100;

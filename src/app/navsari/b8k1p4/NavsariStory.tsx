@@ -159,11 +159,16 @@ export default function NavsariStory() {
     );
 
     useEffect(() => {
-        const isNew = unlockTreasure("navsari");
-        if (isNew) setShowUnlock(true);
+        let active = true;
+        unlockTreasure("navsari").then((isNew) => {
+            if (active && isNew) setShowUnlock(true);
+        });
         window.dispatchEvent(
             new CustomEvent("treasure-unlocked", { detail: { id: "navsari" } }),
         );
+        return () => {
+            active = false;
+        };
     }, []);
 
     useEffect(() => {

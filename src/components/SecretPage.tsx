@@ -41,12 +41,16 @@ export default function SecretPage({
     const [showUnlock, setShowUnlock] = useState(false);
 
     useEffect(() => {
-        const isNew = unlockTreasure(id);
-        if (isNew) setShowUnlock(true);
-
+        let active = true;
+        unlockTreasure(id).then((isNew) => {
+            if (active && isNew) setShowUnlock(true);
+        });
         window.dispatchEvent(
             new CustomEvent("treasure-unlocked", { detail: { id } }),
         );
+        return () => {
+            active = false;
+        };
     }, [id]);
 
     return (

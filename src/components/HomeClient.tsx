@@ -10,7 +10,7 @@ export default function HomeClient() {
     const [unlocked, setUnlocked] = useState<string[]>([]);
 
     useEffect(() => {
-        setUnlocked(getUnlockedTreasures());
+        getUnlockedTreasures().then(setUnlocked);
     }, []);
 
     const count = unlocked.length;

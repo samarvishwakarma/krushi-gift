@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, Reorder } from "framer-motion";
 import { useEditMode } from "./EditModeProvider";
 import Polaroid from "@/components/scrapbook/Polaroid";
 import VoiceNote from "@/components/scrapbook/VoiceNote";
@@ -34,32 +34,20 @@ export default function PageMedia({
     const [photos, setPhotos] = useState<DbMedia[]>([]);
     const [audio, setAudio] = useState<DbMedia | null>(null);
     const [busy, setBusy] = useState(false);
-    const [dragIndex, setDragIndex] = useState<number | null>(null);
     const fileInput = useRef<HTMLInputElement>(null);
+    const photosRef = useRef<DbMedia[]>([]);
+    photosRef.current = photos;
 
-    // Drag-to-reorder Krushi's photos; persist the new order to `sort`.
-    const dropAt = useCallback(
-        (to: number) => {
-            setDragIndex((from) => {
-                if (from === null || from === to) return null;
-                setPhotos((prev) => {
-                    const next = [...prev];
-                    const [moved] = next.splice(from, 1);
-                    next.splice(to, 0, moved);
-                    next.forEach((m, idx) =>
-                        editFetch(`/api/media/${m.id}`, {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ sort: idx }),
-                        }).catch(() => {}),
-                    );
-                    return next;
-                });
-                return null;
-            });
-        },
-        [editFetch],
-    );
+    // Persist the current photo order (sort) after a touch/mouse drag settles.
+    const persistOrder = useCallback(() => {
+        photosRef.current.forEach((m, idx) =>
+            editFetch(`/api/media/${m.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sort: idx }),
+            }).catch(() => {}),
+        );
+    }, [editFetch]);
 
     useEffect(() => {
         fetch(`/api/media?page=${encodeURIComponent(pageId)}`)
@@ -173,31 +161,40 @@ export default function PageMedia({
                         </motion.div>
                     ))}
 
-                    {photos.map((m, i) => (
-                        <div
-                            key={m.id}
-                            className={`relative w-40 ${editing ? "cursor-grab active:cursor-grabbing" : ""} ${
-                                dragIndex === i ? "opacity-50" : ""
-                            }`}
-                            draggable={editing}
-                            onDragStart={() => setDragIndex(i)}
-                            onDragOver={(e) => editing && e.preventDefault()}
-                            onDrop={() => dropAt(i)}
-                            onDragEnd={() => setDragIndex(null)}
+                    {photos.length > 0 && (
+                        <Reorder.Group
+                            as="div"
+                            axis="x"
+                            values={photos}
+                            onReorder={setPhotos}
+                            className="flex flex-wrap items-start justify-center gap-5"
                         >
-                            <Polaroid src={m.url} caption={m.caption ?? ""} rotate={i % 2 === 0 ? 2 : -2} />
-                            {editing && (
-                                <button
-                                    type="button"
-                                    onClick={() => removeMedia(m)}
-                                    className="absolute -right-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-[#e7b3bd] bg-white text-[#b23b53] shadow"
-                                    aria-label="Remove photo"
+                            {photos.map((m, i) => (
+                                <Reorder.Item
+                                    as="div"
+                                    key={m.id}
+                                    value={m}
+                                    dragListener={editing}
+                                    onDragEnd={persistOrder}
+                                    whileDrag={{ scale: 1.06, zIndex: 5 }}
+                                    className={`relative w-40 ${editing ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
                                 >
-                                    ✕
-                                </button>
-                            )}
-                        </div>
-                    ))}
+                                    <Polaroid src={m.url} caption={m.caption ?? ""} rotate={i % 2 === 0 ? 2 : -2} />
+                                    {editing && (
+                                        <button
+                                            type="button"
+                                            onPointerDownCapture={(e) => e.stopPropagation()}
+                                            onClick={() => removeMedia(m)}
+                                            className="absolute -right-2 -top-2 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-[#e7b3bd] bg-white text-[#b23b53] shadow"
+                                            aria-label="Remove photo"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </Reorder.Item>
+                            ))}
+                        </Reorder.Group>
+                    )}
 
                     {editing && (
                         <button
