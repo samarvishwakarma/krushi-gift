@@ -40,7 +40,7 @@ export default function CalendarExperience() {
     const { editing, editFetch } = useEditMode();
     const [dbEntries, setDbEntries] = useState<TimelineEntry[]>([]);
     const [reactions, setReactions] = useState<Record<string, { hearted: boolean }>>({});
-    const [view, setView] = useState<"timeline" | "grid">("timeline");
+    const [view, setView] = useState<"timeline" | "grid">("grid");
     const [mounted, setMounted] = useState(false);
     const [showUnlock, setShowUnlock] = useState(false);
     const [editor, setEditor] = useState<{
@@ -228,7 +228,7 @@ export default function CalendarExperience() {
                 {/* view toggle */}
                 <div className="mt-8 flex justify-center">
                     <div className="inline-flex rounded-full border border-[#e0cba2] bg-[#fffaf0] p-1">
-                        {(["timeline", "grid"] as const).map((v) => (
+                        {(["grid", "timeline"] as const).map((v) => (
                             <button
                                 key={v}
                                 type="button"

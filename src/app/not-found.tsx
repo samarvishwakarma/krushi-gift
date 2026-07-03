@@ -1,3 +1,4 @@
+import CornerPeekSprite from "@/components/scrapbook/CornerPeekSprite";
 import Link from "next/link";
 
 export default function NotFound() {
@@ -5,7 +6,15 @@ export default function NotFound() {
         <main className="flex min-h-screen items-center justify-center p-8">
             <div className="relative max-w-xl rotate-[-0.6deg] rounded-[20px] border border-[#e3cfa6] bg-[#fffaf0] p-8 text-center shadow-[0_18px_50px_rgba(120,70,30,0.22)]">
                 <div className="mb-3 text-7xl">🕵️‍♀️</div>
-
+                <CornerPeekSprite
+                    src="/sprites/oops.png"
+                    frameWidth={1536 / 4}
+                    frameHeight={1024 / 2}
+                    frames={8}
+                    columns={4}
+                    fps={4}
+                    scale={0.35}
+                />
                 <h1 className="[font-family:var(--font-caveat)] text-7xl leading-none text-[#b23b53]">
                     404
                 </h1>

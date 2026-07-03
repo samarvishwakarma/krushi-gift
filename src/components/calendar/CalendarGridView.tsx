@@ -30,6 +30,8 @@ export default function CalendarGridView({
     const origin = parseDate(ORIGIN_DATE);
     const [view, setView] = useState(() => new Date(origin.getFullYear(), origin.getMonth(), 1));
     const [selected, setSelected] = useState<string | null>(null);
+    const [yearEdit, setYearEdit] = useState(false);
+    const [yearInput, setYearInput] = useState("");
 
     const byDate = useMemo(() => {
         const m: Record<string, TimelineEntry[]> = {};
@@ -41,7 +43,7 @@ export default function CalendarGridView({
     const month = view.getMonth();
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const monthLabel = view.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    const monthName = view.toLocaleDateString("en-GB", { month: "long" });
 
     const cells = Array.from({ length: CELLS }, (_, i) => {
         const day = i - firstDay + 1;
@@ -51,6 +53,17 @@ export default function CalendarGridView({
     const shift = (delta: number) => {
         setView(new Date(year, month + delta, 1));
         setSelected(null);
+    };
+
+    const setYear = (y: number) => {
+        setView(new Date(y, month, 1));
+        setSelected(null);
+    };
+
+    const commitYear = () => {
+        const y = parseInt(yearInput, 10);
+        if (Number.isFinite(y) && y >= 1990 && y <= 2100) setYear(y);
+        setYearEdit(false);
     };
 
     const selectedEntries = selected ? byDate[selected] ?? [] : [];
@@ -67,9 +80,58 @@ export default function CalendarGridView({
                     >
                         ‹
                     </button>
-                    <h2 className="[font-family:var(--font-caveat)] text-3xl text-[#b23b53]">
-                        {monthLabel}
-                    </h2>
+
+                    <div className="flex flex-col items-center">
+                        <h2 className="[font-family:var(--font-caveat)] text-3xl leading-none text-[#b23b53]">
+                            {monthName}
+                        </h2>
+                        {/* year stepper + click-to-type */}
+                        <div className="mt-0.5 flex items-center gap-1 text-[#8a6f53]">
+                            <button
+                                type="button"
+                                onClick={() => setYear(year - 1)}
+                                className="rounded-full px-2 leading-none hover:bg-[#f6ead2]"
+                                aria-label="Previous year"
+                            >
+                                «
+                            </button>
+                            {yearEdit ? (
+                                <input
+                                    type="number"
+                                    autoFocus
+                                    defaultValue={year}
+                                    onChange={(e) => setYearInput(e.target.value)}
+                                    onBlur={commitYear}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") commitYear();
+                                        if (e.key === "Escape") setYearEdit(false);
+                                    }}
+                                    className="w-16 rounded-md border border-[#e0cba2] bg-white px-1 text-center text-sm outline-none"
+                                />
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setYearInput(String(year));
+                                        setYearEdit(true);
+                                    }}
+                                    className="min-w-14 rounded-md px-2 text-sm font-semibold tabular-nums hover:bg-[#f6ead2]"
+                                    title="Click to type a year"
+                                >
+                                    {year}
+                                </button>
+                            )}
+                            <button
+                                type="button"
+                                onClick={() => setYear(year + 1)}
+                                className="rounded-full px-2 leading-none hover:bg-[#f6ead2]"
+                                aria-label="Next year"
+                            >
+                                »
+                            </button>
+                        </div>
+                    </div>
+
                     <button
                         type="button"
                         onClick={() => shift(1)}

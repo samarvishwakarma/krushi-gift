@@ -12,7 +12,7 @@ export default function Page() {
             letter={[
                 `Motiiiii`,
                 `I missed you here.`,
-                `Har dusre minute laga, "Yeh moti ko dikhana hai." The chai, the tiny cafés, the pine ki smell, the silence... sab mein tumhari thodi si kami thi.`,
+                `Har dusre minute laga, "Yeh moti ko dikhana hai." The chai, the tiny cafés, the pine ki smell, the silence... sab mein teri thodi si kami thi.`,
                 `Landour bohot khoobsurat tha, but it would've been even better with you.`,
             ]}
             photos={[
