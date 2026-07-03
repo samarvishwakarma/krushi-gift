@@ -37,14 +37,40 @@ create table progress (
 );
 create index if not exists progress_visitor_idx on progress (visitor);
 
+-- Relationship timeline entries (the "calendar" page). Seed entries live in
+-- code; these are the ones added from the browser.
+create table if not exists timeline (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  title text not null,
+  note text,
+  kind text not null default 'past' check (kind in ('past','milestone','future')),
+  emoji text,
+  media jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now()
+);
+-- safe to re-run if the table already existed without the column:
+alter table timeline add column if not exists emoji text;
+
+-- Reactions (hearts / little replies) keyed by entry id (seed id or timeline uuid).
+create table if not exists reactions (
+  entry_key text primary key,
+  hearted boolean not null default false,
+  reply text,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists pins_page_idx on pins (page);
 create index if not exists media_page_idx on media (page);
+create index if not exists timeline_date_idx on timeline (date);
 
 -- Row Level Security: lock down direct client access. All reads/writes go
 -- through our server routes using the service_role key (which bypasses RLS),
 -- so we intentionally add NO public policies here.
 alter table pins enable row level security;
 alter table media enable row level security;
+alter table timeline enable row level security;
+alter table reactions enable row level security;
 
 -- Storage bucket for photos/audio (public read).
 insert into storage.buckets (id, name, public)
