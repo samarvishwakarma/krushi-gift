@@ -1,5 +1,6 @@
 "use client";
 
+import { type ReactNode } from "react";
 import { motion } from "framer-motion";
 import type { MediaItem, TimelineEntry, TimelineKind } from "@/data/timeline";
 import {
@@ -159,6 +160,13 @@ export default function EntryCard({
                     <span>{entry.title}</span>
                 </h3>
 
+                {entry.subtitle && (
+                    <p className="mt-1 text-sm italic text-[#a98a63]">{entry.subtitle}</p>
+                )}
+
+                {/* quick chips (both compact + detail) */}
+                {!sealed && <QuickChips entry={entry} />}
+
                 {sealed ? (
                     <div className="relative mt-3">
                         <p className="select-none blur-xs">
@@ -184,6 +192,9 @@ export default function EntryCard({
                         </p>
                     )
                 )}
+
+                {/* rich archive — full detail view only */}
+                {!sealed && !compact && <RichDetails entry={entry} />}
 
                 {/* footer */}
                 <div className="mt-4 flex items-center justify-between">
@@ -226,5 +237,214 @@ export default function EntryCard({
                 </div>
             </div>
         </motion.div>
+    );
+}
+
+/* ------------------------------------------------------------------ */
+/* Rich-detail pieces                                                  */
+/* ------------------------------------------------------------------ */
+
+function Chip({ children }: { children: ReactNode }) {
+    return (
+        <span className="rounded-full bg-[#f3e6d0] px-2.5 py-0.5 text-xs text-[#8a6f53]">
+            {children}
+        </span>
+    );
+}
+
+function QuickChips({ entry }: { entry: TimelineEntry }) {
+    if (!entry.relationshipStage && !entry.location && !entry.mood && !entry.importance)
+        return null;
+    return (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+            {entry.relationshipStage && (
+                <span className="rounded-full bg-[#b23b53] px-2.5 py-0.5 text-xs font-semibold text-white">
+                    💞 {entry.relationshipStage}
+                </span>
+            )}
+            {entry.location && <Chip>📍 {entry.location}</Chip>}
+            {entry.mood && <Chip>🎭 {entry.mood}</Chip>}
+            {entry.importance ? <Chip>{"★".repeat(entry.importance)}</Chip> : null}
+        </div>
+    );
+}
+
+function travelLine(t: NonNullable<TimelineEntry["travel"]>): string {
+    const route = [t.from, t.to].filter(Boolean).join(" → ");
+    return [route, t.mode, t.duration].filter(Boolean).join(" · ");
+}
+
+function MemoryCard({
+    label,
+    color,
+    text,
+}: {
+    label: string;
+    color: string;
+    text: string;
+}) {
+    return (
+        <div
+            className="rounded-xl border p-3"
+            style={{ borderColor: `${color}33`, background: `${color}0f` }}
+        >
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color }}>
+                {label}
+            </p>
+            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed text-[#5b4632]">
+                {text}
+            </p>
+        </div>
+    );
+}
+
+function RichDetails({ entry }: { entry: TimelineEntry }) {
+    const hasMeta =
+        entry.weather || (entry.peoplePresent?.length ?? 0) > 0 || (entry.tags?.length ?? 0) > 0;
+    const hasSongs = (entry.songs?.length ?? 0) > 0;
+    const hasFirsts = (entry.firsts?.length ?? 0) > 0;
+    const hasGifts = (entry.gifts?.length ?? 0) > 0;
+    const hasTravel =
+        entry.travel && (entry.travel.from || entry.travel.to || entry.travel.mode || entry.travel.duration);
+    const hasFeelings =
+        (entry.feelings?.samar?.length ?? 0) > 0 || (entry.feelings?.krushi?.length ?? 0) > 0;
+
+    if (
+        !hasMeta &&
+        !hasSongs &&
+        !hasFirsts &&
+        !hasGifts &&
+        !hasTravel &&
+        !hasFeelings &&
+        !entry.hisMemory &&
+        !entry.herMemory &&
+        !entry.funnyMoment &&
+        !entry.favoriteQuote &&
+        !entry.map
+    ) {
+        return null;
+    }
+
+    return (
+        <div className="mt-4 space-y-3">
+            {hasTravel && (
+                <div className="rounded-xl border border-[#eadcc0] bg-[#f6ecd8] p-3 text-sm text-[#5b4632]">
+                    🚆 {travelLine(entry.travel!)}
+                </div>
+            )}
+
+            {hasFirsts && (
+                <div className="flex flex-wrap gap-1.5">
+                    {entry.firsts!.map((f, i) => (
+                        <span
+                            key={i}
+                            className="rounded-full bg-[#fbe7d2] px-2.5 py-0.5 text-xs font-semibold text-[#a05a3a]"
+                        >
+                            ⭐ {f}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {hasMeta && (
+                <div className="flex flex-wrap gap-1.5">
+                    {entry.weather && <Chip>🌤 {entry.weather}</Chip>}
+                    {entry.peoplePresent?.map((p, i) => <Chip key={`p${i}`}>👤 {p}</Chip>)}
+                    {entry.tags?.map((t, i) => <Chip key={`t${i}`}>#{t}</Chip>)}
+                </div>
+            )}
+
+            {hasFeelings && (
+                <div className="space-y-1 text-sm">
+                    {(entry.feelings?.samar?.length ?? 0) > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[#b23b53]">Samar felt</span>
+                            {entry.feelings!.samar!.map((w, i) => <Chip key={`s${i}`}>{w}</Chip>)}
+                        </div>
+                    )}
+                    {(entry.feelings?.krushi?.length ?? 0) > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-[#8a5a7a]">Krushi felt</span>
+                            {entry.feelings!.krushi!.map((w, i) => <Chip key={`k${i}`}>{w}</Chip>)}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {hasGifts && (
+                <div className="flex flex-wrap gap-1.5">
+                    {entry.gifts!.map((g, i) => (
+                        <span
+                            key={i}
+                            className="rounded-full bg-[#f3e6d0] px-2.5 py-0.5 text-xs text-[#8a6f53]"
+                        >
+                            🎁 {g}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {(entry.hisMemory || entry.herMemory) && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                    {entry.hisMemory && (
+                        <MemoryCard label="what Samar felt ❤️" color="#b23b53" text={entry.hisMemory} />
+                    )}
+                    {entry.herMemory && (
+                        <MemoryCard label="what Krushi felt ❤️" color="#8a5a7a" text={entry.herMemory} />
+                    )}
+                </div>
+            )}
+
+            {entry.funnyMoment && (
+                <div className="rounded-xl bg-[#fdf3df] p-3 text-[#5b4632]">
+                    <span className="mr-1">😄</span>
+                    {entry.funnyMoment}
+                </div>
+            )}
+
+            {entry.favoriteQuote && (
+                <blockquote className="border-l-4 border-[#e0b0bd] pl-3 [font-family:var(--font-caveat)] text-2xl leading-snug text-[#7a5a38]">
+                    “{entry.favoriteQuote}”
+                </blockquote>
+            )}
+
+            {hasSongs && (
+                <div>
+                    <p className="text-xs uppercase tracking-widest text-[#a98a63]">
+                        songs of the day
+                    </p>
+                    <ul className="mt-1 space-y-1 text-sm">
+                        {entry.songs!.map((s, i) => (
+                            <li key={i}>
+                                🎵{" "}
+                                {s.url ? (
+                                    <a
+                                        href={s.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-[#b23b53] underline-offset-2 hover:underline"
+                                    >
+                                        {s.title || s.url}
+                                    </a>
+                                ) : (
+                                    <span className="text-[#5b4632]">{s.title}</span>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            {entry.map && (
+                <a
+                    href={entry.map}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#f3e6d0] px-3 py-1 text-sm text-[#8a6f53] hover:bg-[#efd9b8]"
+                >
+                    📍 open the map
+                </a>
+            )}
+        </div>
     );
 }

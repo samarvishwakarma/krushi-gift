@@ -47,10 +47,12 @@ create table if not exists timeline (
   kind text not null default 'past' check (kind in ('past','milestone','future')),
   emoji text,
   media jsonb not null default '[]'::jsonb,
+  details jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
--- safe to re-run if the table already existed without the column:
+-- safe to re-run if the table already existed without these columns:
 alter table timeline add column if not exists emoji text;
+alter table timeline add column if not exists details jsonb not null default '{}'::jsonb;
 
 -- Reactions (hearts / little replies) keyed by entry id (seed id or timeline uuid).
 create table if not exists reactions (

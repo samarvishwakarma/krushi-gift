@@ -9,9 +9,12 @@ import MemoryUnlockOverlay from "@/components/MemoryUnlockOverlay";
 import {
     ORIGIN_DATE,
     SEED_ENTRIES,
+    type Feelings,
     type MediaItem,
+    type Song,
     type TimelineEntry,
     type TimelineKind,
+    type Travel,
 } from "@/data/timeline";
 import TimelineView from "./TimelineView";
 import CalendarGridView from "./CalendarGridView";
@@ -26,7 +29,45 @@ type DbEntry = {
     kind: TimelineKind;
     emoji: string | null;
     media: MediaItem[];
+    details?: Record<string, unknown> | null;
 };
+
+/** Flatten a DB row (with its `details` JSONB) into a rich TimelineEntry. */
+function toEntry(e: DbEntry): TimelineEntry {
+    const d = (e.details ?? {}) as Record<string, unknown>;
+    const s = (v: unknown) => (typeof v === "string" ? v : undefined);
+    const sa = (v: unknown) => (Array.isArray(v) ? (v as string[]) : undefined);
+    return {
+        id: e.id,
+        date: e.date,
+        title: e.title,
+        kind: e.kind,
+        source: "db",
+        note: e.note ?? undefined,
+        emoji: e.emoji ?? undefined,
+        media: e.media ?? [],
+        subtitle: s(d.subtitle),
+        hisMemory: s(d.hisMemory),
+        herMemory: s(d.herMemory),
+        funnyMoment: s(d.funnyMoment),
+        favoriteQuote: s(d.favoriteQuote),
+        location: s(d.location),
+        weather: s(d.weather),
+        mood: s(d.mood),
+        importance: typeof d.importance === "number" ? d.importance : undefined,
+        map: s(d.map),
+        relationshipStage: s(d.relationshipStage),
+        travel: d.travel && typeof d.travel === "object" ? (d.travel as Travel) : undefined,
+        gifts: sa(d.gifts),
+        feelings:
+            d.feelings && typeof d.feelings === "object" ? (d.feelings as Feelings) : undefined,
+        firsts: sa(d.firsts),
+        timelineOrder: typeof d.timelineOrder === "number" ? d.timelineOrder : undefined,
+        tags: sa(d.tags),
+        peoplePresent: sa(d.peoplePresent),
+        songs: Array.isArray(d.songs) ? (d.songs as Song[]) : undefined,
+    };
+}
 
 // deterministic starfield (no Math.random → no hydration mismatch)
 const STARS = Array.from({ length: 44 }, (_, i) => ({
@@ -67,18 +108,7 @@ export default function CalendarExperience() {
             .then((r) => r.json())
             .then((d) => {
                 if (Array.isArray(d?.entries)) {
-                    setDbEntries(
-                        (d.entries as DbEntry[]).map((e) => ({
-                            id: e.id,
-                            date: e.date,
-                            title: e.title,
-                            note: e.note ?? undefined,
-                            kind: e.kind,
-                            emoji: e.emoji ?? undefined,
-                            media: e.media ?? [],
-                            source: "db" as const,
-                        })),
-                    );
+                    setDbEntries((d.entries as DbEntry[]).map(toEntry));
                 }
                 if (d?.reactions) setReactions(d.reactions);
             })
@@ -87,9 +117,11 @@ export default function CalendarExperience() {
 
     const entries = useMemo(
         () =>
-            [...SEED_ENTRIES, ...dbEntries].sort(
-                (a, b) => parseDate(a.date).getTime() - parseDate(b.date).getTime(),
-            ),
+            [...SEED_ENTRIES, ...dbEntries].sort((a, b) => {
+                const byDate = parseDate(a.date).getTime() - parseDate(b.date).getTime();
+                if (byDate !== 0) return byDate;
+                return (a.timelineOrder ?? 0) - (b.timelineOrder ?? 0);
+            }),
         [dbEntries],
     );
 
@@ -120,7 +152,7 @@ export default function CalendarExperience() {
             });
             const d = await res.json().catch(() => null);
             if (res.ok && d?.entry) {
-                const updated: TimelineEntry = { ...d.entry, note: d.entry.note ?? undefined, emoji: d.entry.emoji ?? undefined, source: "db" };
+                const updated = toEntry(d.entry as DbEntry);
                 setDbEntries((p) => p.map((e) => (e.id === updated.id ? updated : e)));
                 setEditor({ open: false, mode: "add" });
             } else alert(d?.error || "Could not save.");
@@ -133,7 +165,7 @@ export default function CalendarExperience() {
         });
         const d = await res.json().catch(() => null);
         if (res.ok && d?.entry) {
-            const added: TimelineEntry = { ...d.entry, note: d.entry.note ?? undefined, emoji: d.entry.emoji ?? undefined, source: "db" };
+            const added = toEntry(d.entry as DbEntry);
             setDbEntries((p) => [...p, added]);
             setEditor({ open: false, mode: "add" });
         } else alert(d?.error || "Could not save.");
